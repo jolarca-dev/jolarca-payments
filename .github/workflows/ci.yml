@@ -5,6 +5,16 @@
 # This is a policy/governance repository (no application code), so the `ci`
 # job validates documents and runs the test suite. The `security` job runs
 # gitleaks to ensure no secrets enter the CDE repository.
+#
+# gitleaks is invoked as the upstream CLI, not `gitleaks/gitleaks-action@v2`.
+# The action demands a paid `GITLEAKS_LICENSE` secret for organization-owned
+# repositories and fails closed without it, which took the `security` context
+# red on `main`. The CLI is open source, needs no license, and is the pattern
+# already proven green in `jolarca-data` and `jolarca`.
+#
+# The nightly schedule re-scans full history so that rule updates in a newer
+# gitleaks release, or a history rewrite, cannot hide a secret indefinitely
+# (PCI-DSS Req. 11 — periodic security testing).
 
 name: ci
 
@@ -13,6 +23,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "41 3 * * *"   # nightly full-history secret scan
 
 permissions:
   contents: read
@@ -52,10 +64,17 @@ jobs:
     name: security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # fetch-depth 0 is required: the default shallow checkout exposes only the
+      # tip commit, so a secret in an earlier commit would never be scanned.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: gitleaks secret scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_ENABLE_SUMMARY: "true"
+      - name: gitleaks secret scan (full history)
+        run: |
+          GL_VER=8.30.1
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GL_VER}/gitleaks_${GL_VER}_linux_x64.tar.gz" \
+            | tar xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+          gitleaks detect --source . --no-banner --redact
