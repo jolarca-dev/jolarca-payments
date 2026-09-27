@@ -1,0 +1,61 @@
+# CI workflow for jolarca-payments
+# Produces the two required status checks declared in
+# repos/jolarca-payments.yml: `ci` and `security`.
+#
+# This is a policy/governance repository (no application code), so the `ci`
+# job validates documents and runs the test suite. The `security` job runs
+# gitleaks to ensure no secrets enter the CDE repository.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install ruff mypy pytest
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Mypy type check
+        run: mypy --strict .
+
+      - name: Pytest
+        run: pytest tests/ -q
+
+      - name: YAML validation
+        run: |
+          pip install yamllint
+          yamllint -d "{extends: default, rules: {line-length: disable}}" .
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_SUMMARY: "true"
