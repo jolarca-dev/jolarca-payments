@@ -56,7 +56,11 @@ follow the PCI-DSS change-control process (Req. 6.3):
 ```
 jolarca-payments/
 ├── .github/
-│   └── CODEOWNERS                  # Code ownership — CDE access control (ADR-0004 R4, Req. 7)
+│   ├── CODEOWNERS                  # Code ownership — CDE access control (ADR-0004 R4, Req. 7)
+│   ├── dependabot.yml              # Dependency updates (github-actions, pip)
+│   ├── PULL_REQUEST_TEMPLATE.md    # PR template with PCI-DSS impact section
+│   └── workflows/
+│       └── ci.yml                  # CI: ruff, mypy, pytest, yamllint, gitleaks
 ├── policies/
 │   ├── payment-security-policy.md  # Master payment security policy (Req. 12.1)
 │   ├── data-classification.md      # Payment data classification (Req. 9, Art. 32)
@@ -74,10 +78,15 @@ jolarca-payments/
 ├── runbooks/
 │   ├── incident-response.md        # Payment-specific incident response (Req. 12.10)
 │   └── key-rotation.md             # Cryptographic key rotation procedures (Req. 3)
+├── tests/
+│   ├── __init__.py
+│   └── test_health.py              # Health check (ensures pytest is wired)
 ├── .gitignore                      # PCI-DSS prohibited artifacts
+├── .pre-commit-config.yaml         # Pre-commit hooks (ruff, mypy, gitleaks, etc.)
+├── CONTRIBUTING.md                 # Contribution guidelines (PCI-DSS Req. 6.3)
+├── pyproject.toml                  # Python tooling config (ruff, mypy, pytest)
 ├── SECURITY.md                     # Vulnerability disclosure — CDE-specific
-├── README.md                       # This file
-└── LICENSE                         # License (if applicable)
+└── README.md                       # This file
 ```
 
 ## Compliance Framework Mapping
@@ -91,9 +100,8 @@ jolarca-payments/
 
 ## Current Status
 
-**Planned.** This repository is declared in the
-[`jolarca-control`](https://github.com/jolarca-dev/jolarca-control) fleet
-allow-list (`repos/jolarca-payments.yml`) but is not yet populated on GitHub.
+**Active.** This repository is populated and operational. CI runs on every push
+and pull request, with a nightly schedule for full-history secret scanning.
 
 ### Known Dependencies
 
@@ -106,10 +114,10 @@ allow-list (`repos/jolarca-payments.yml`) but is not yet populated on GitHub.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](https://github.com/jolarca-dev/jolarca-control/blob/main/CONTRIBUTING.md)
-in `jolarca-control`. Changes to payment policy or CDE configuration are
-**security changes** and require the full compliance gate set: dependency scan,
-secret scan, license check, code quality, and security review.
+See [CONTRIBUTING.md](CONTRIBUTING.md) in this repository. Changes to payment
+policy or CDE configuration are **security changes** and require the full
+compliance gate set: dependency scan, secret scan, license check, code quality,
+and security review.
 
 ## License
 
