@@ -41,9 +41,11 @@ jobs:
     # turn a required check red on main with no change to this repository.
     if: github.event_name != 'schedule'
     steps:
-      - uses: actions/checkout@v4
+      # Pinned to a full commit SHA, never a tag, per
+      # jolarca-control/CONTRIBUTING.md (supply-chain control T-12).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v7.0.0
         with:
           python-version: "3.12"
 
@@ -51,7 +53,8 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install ruff mypy pytest
+          # Pinned versions for reproducible CI. Dependabot will propose bumps.
+          pip install ruff==0.16.9 mypy==2.3.1 pytest==9.1.1 yamllint==1.38.0
 
       - name: Ruff lint
         run: ruff check .
@@ -63,8 +66,7 @@ jobs:
         run: pytest tests/ -q
 
       - name: YAML validation
-        run: |
-          pip install yamllint
+        run: >-
           yamllint -d "{extends: default, rules: {line-length: disable}}" .
 
   security:
